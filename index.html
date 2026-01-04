@@ -1,0 +1,1479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Pips Game - Unlimited Domino Puzzles</title>
+    
+    <!-- Meta Tags for Tool Classification -->
+    <meta name="category" content="fun">
+    <meta name="icon" content="🎮">
+
+    <!-- Google AdSense -->
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9279583389810634"
+     crossorigin="anonymous"></script>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    
+    <!-- Babel for JSX compilation in browser -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <style>
+        body { 
+            margin: 0; 
+            padding: 0; 
+            -webkit-tap-highlight-color: transparent;
+            /* Prevent pull-to-refresh on mobile */
+            overscroll-behavior: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <!-- Main Game Script -->
+    <script type="text/babel">
+        const { useState, useEffect, useMemo } = React;
+
+        // --- 内嵌图标组件 (解决 lucideReact 未定义报错) ---
+        const IconBase = ({ children, ...props }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>{children}</svg>
+        );
+
+        const Moon = (props) => <IconBase {...props}><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></IconBase>;
+        const Sun = (props) => <IconBase {...props}><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></IconBase>;
+        const HelpCircle = (props) => <IconBase {...props}><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></IconBase>;
+        const Settings = (props) => <IconBase {...props}><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.1a2 2 0 0 1-1-1.72v-.51a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></IconBase>;
+        const Share2 = (props) => <IconBase {...props}><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" x2="15.42" y1="13.51" y2="17.49"/><line x1="15.41" x2="8.59" y1="6.51" y2="10.49"/></IconBase>;
+        const X = (props) => <IconBase {...props}><path d="M18 6 6 18"/><path d="6 6 18 18"/></IconBase>;
+        const RefreshCw = (props) => <IconBase {...props}><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></IconBase>;
+        const Trophy = (props) => <IconBase {...props}><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17"/><path d="M14 14.66V17"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/><path d="M10 19h4"/></IconBase>;
+        const Globe = (props) => <IconBase {...props}><circle cx="12" cy="12" r="10"/><line x1="2" x2="22" y1="12" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></IconBase>;
+        const Zap = (props) => <IconBase {...props}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></IconBase>;
+        const Flame = (props) => <IconBase {...props}><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></IconBase>;
+        const Info = (props) => <IconBase {...props}><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></IconBase>;
+        const Star = (props) => <IconBase {...props}><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></IconBase>;
+        const Layout = (props) => <IconBase {...props}><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><line x1="3" x2="21" y1="9" y2="9"/><line x1="9" x2="9" y1="21" y2="9"/></IconBase>;
+        const Check = (props) => <IconBase {...props}><path d="M20 6 9 17l-5-5"/></IconBase>;
+        const ExternalLink = (props) => <IconBase {...props}><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" x2="21" y1="14" y2="3"/></IconBase>;
+        const FileText = (props) => <IconBase {...props}><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/><line x1="10" x2="8" y1="9" y2="9"/></IconBase>;
+        const MapIcon = (props) => <IconBase {...props}><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" x2="9" y1="3" y2="18"/><line x1="15" x2="15" y1="6" y2="21"/></IconBase>;
+        const Users = (props) => <IconBase {...props}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></IconBase>;
+        const ScrollText = (props) => <IconBase {...props}><path d="M8 21h12a2 2 0 0 0 2-2v-2H10v2a2 2 0 1 1-4 0V5a2 2 0 1 0-4 0v3h4"/><path d="M19 17V5a2 2 0 0 0-2-2H4"/></IconBase>;
+        const Lock = (props) => <IconBase {...props}><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></IconBase>;
+        const AlertTriangle = (props) => <IconBase {...props}><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></IconBase>;
+
+        // --- 多语言字典 ---
+        const TRANSLATIONS = {
+          en: {
+            title: "Pips Game",
+            subtitle: "Unlimited Domino Puzzles",
+            newGame: "New Game",
+            reset: "Reset",
+            howToPlay: "How to Play",
+            settings: "Settings",
+            share: "Share",
+            theme: "Theme",
+            language: "Language",
+            played: "Played",
+            congrats: "Puzzle Solved!",
+            mode: "Game Mode",
+            classic: "Classic",
+            unlimited: "Unlimited",
+            streak: "Streak",
+            nextPuzzle: "Next Puzzle in",
+            rules: {
+              title: "How to Play",
+              desc1: "Fill the entire board with all the dominoes to meet the conditions.",
+              desc2: "Tap to select and rotate dominoes. Drag or tap board to place them.",
+              desc3: "Colored regions have conditions attached to their bottom right:",
+              sum: "Number (2): Sum must equal this number",
+              eq: "Equal (=): All dots must be the same",
+              neq: "Not Equal (≠): All dots must be different",
+              lt: "<8: Sum must be less than this",
+              gt: ">2: Sum must be greater than this",
+              even: "E: Sum must be Even",
+              odd: "OD: Sum must be Odd",
+              no6: "∅6: No 6s allowed",
+              prod: "×12: Product equals this number",
+              prime: "P: Prime numbers only (2, 3, 5)"
+            },
+            changelog: "Changelog",
+            feedback: "Feedback",
+            footerDisclaimer: "Not affiliated with NYT Games.",
+            colors: {
+                classic: "Classic",
+                dark: "Dark Mode",
+                ocean: "Ocean Breeze",
+                forest: "Forest Green",
+                sunset: "Sunset Glow"
+            },
+            sections: {
+                aboutTitle: "About Pips Game",
+                aboutDesc: "Pips Game is an unlimited free online domino puzzle inspired by logic games. Place dominoes strategically to solve puzzles from easy to hard challenges. It combines the classic feel of dominoes with Sudoku-like logic constraints.",
+                featuresTitle: "Game Features",
+                features: [
+                    { t: "Pips Unlimited", d: "Never run out of challenges. Our smart engine generates an infinite number of unique puzzles for endless play." },
+                    { t: "Multiple Themes", d: "Switch between Classic, Dark Mode, Ocean, and more to suit your style while you play Pips." },
+                    { t: "Logic Training", d: "Improve your math and logic skills with constraints like Sum, Product, and Primes." }
+                ],
+                faqTitle: "Frequently Asked Questions",
+                faq: [
+                    { q: "Is Pips Game free to play?", a: "Yes, you can play Pips Game completely for free online on any device (mobile, tablet, or desktop) with no downloads required." },
+                    { q: "How do I access Pips Unlimited mode?", a: "Simply open Settings and toggle the Game Mode to 'Unlimited'. This allows you to play continuous puzzles and build your winning streak." },
+                    { q: "Is there a Pips Archive of past puzzles?", a: "Since every puzzle is procedurally generated in real-time, you have access to an effectively infinite archive of unique content every time you click New Game." },
+                    { q: "How do I win at Pips?", a: "You win by placing all available dominoes onto the board so that every colored region satisfies its specific mathematical condition." },
+                    { q: "Does it save my progress?", a: "Yes, your 'Played' count and streaks are automatically saved locally in your browser." }
+                ],
+                nytTitle: "About NYT Games",
+                nytDesc: "The New York Times Games (NYT Games) has captivated millions with daily puzzles like Wordle, Connections, and The Mini Crossword. These games are celebrated for their ability to stimulate the mind and foster a community of solvers. Pips Game is inspired by this tradition of daily intellectual challenges but focuses uniquely on domino-based logic puzzles. While we admire the creativity of NYT Games, Pips Game is an independent project dedicated to providing unlimited mathematical and spatial reasoning puzzles for free."
+            },
+            footer: {
+                about: "About Us",
+                sitemap: "Sitemap",
+                terms: "Terms of Use",
+                privacy: "Privacy Policy",
+                disclaimer: "Disclaimer",
+                friendlyLinks: "Friendly Links"
+            },
+            modals: {
+                about: {
+                    title: "About Us",
+                    content: "Pips Game was created by a small team of puzzle enthusiasts dedicated to bringing high-quality logic challenges to the web for free. Our mission is to keep your brain sharp with procedurally generated puzzles that never run out. We believe in accessible gaming—no ads, no paywalls, just pure strategy."
+                },
+                sitemap: {
+                    title: "Sitemap",
+                    content: "Navigate Pips Game:",
+                    links: ["Main Game Board", "Game Rules & Tutorial", "Settings & Themes", "Unlimited Mode", "Statistics & Progress", "About & Legal"]
+                },
+                terms: {
+                    title: "Terms of Use",
+                    content: "Welcome to Pips Game. By accessing our website, you agree to use it for personal, non-commercial entertainment. The game is provided 'as is' without warranties of any kind. We reserve the right to update the game features and rules at any time. Play fair, have fun, and exercise your brain!"
+                },
+                privacy: {
+                    title: "Privacy Policy",
+                    content: "We value your privacy. Pips Game does not collect any personally identifiable information. All game progress, including 'Played' counts and 'Streak' records, is stored locally on your device using browser LocalStorage. We do not use tracking cookies for advertising purposes."
+                },
+                disclaimer: {
+                    title: "Disclaimer",
+                    content: "Pips Game is an independent project and is NOT affiliated with, endorsed by, or connected to The New York Times Company or NYT Games. Any resemblance to other puzzle games is purely in the spirit of the genre. All logic and code are original."
+                }
+            }
+          },
+          "zh-TW": {
+            title: "Pips 遊戲",
+            subtitle: "無限骨牌解謎",
+            newGame: "新遊戲",
+            reset: "重置",
+            howToPlay: "遊戲玩法",
+            settings: "設置",
+            share: "分享",
+            theme: "主題",
+            language: "語言",
+            played: "已遊玩",
+            congrats: "謎題已解開！",
+            mode: "遊戲模式",
+            classic: "經典模式",
+            unlimited: "無限模式",
+            streak: "連勝",
+            nextPuzzle: "下一關倒數",
+            rules: {
+              title: "遊戲玩法",
+              desc1: "將所有骨牌填滿棋盤以滿足條件。",
+              desc2: "點擊骨牌選中並旋轉。拖拽或點擊棋盤格子以放置。",
+              desc3: "彩色區域右下角有必須滿足的條件：",
+              sum: "數字 (2): 點數總和必須等於此數",
+              eq: "相等 (=): 區域內點數必須相同",
+              neq: "不等 (≠): 區域內點數必須不同",
+              lt: "<8: 點數總和必須小於此數",
+              gt: ">2: 點數總和必須大於此數",
+              even: "E: 總和必須為偶數",
+              odd: "OD: 總和必須為奇數",
+              no6: "∅6: 禁止出現 6",
+              prod: "×12: 點數乘積等於此數",
+              prime: "P: 僅限質數 (2, 3, 5)"
+            },
+            changelog: "更新日誌",
+            feedback: "反饋",
+            footerDisclaimer: "與紐約時報遊戲無關。",
+            colors: {
+                classic: "經典",
+                dark: "夜間模式",
+                ocean: "海風",
+                forest: "森林",
+                sunset: "日落"
+            },
+            sections: {
+                aboutTitle: "關於 Pips 遊戲",
+                aboutDesc: "Pips Game 是一款受邏輯遊戲啟發的無限免費在線骨牌解謎遊戲。策略性地放置骨牌以解決從簡單到困難的謎題。它結合了骨牌的經典手感與數獨般的邏輯約束。",
+                featuresTitle: "遊戲特色",
+                features: [
+                    { t: "Pips 無限模式", d: "挑戰永無止境。我們的智能引擎可生成無限數量的獨特謎題，供您盡情遊玩。" },
+                    { t: "多種主題", d: "在遊玩 Pips 時，切換經典、夜間模式、海洋等主題，打造您的專屬風格。" },
+                    { t: "邏輯訓練", d: "通過總和、乘積和質數等約束條件，提高您的數學和邏輯能力。" }
+                ],
+                faqTitle: "常見問題",
+                faq: [
+                    { q: "Pips Game 是免費的嗎？", a: "是的，您可以在任何設備（手機、平板或電腦）上完全免費在線遊玩 Pips Game，無需下載。" },
+                    { q: "如何進入 Pips 無限模式？", a: "只需打開設置並將遊戲模式切換為「無限模式」。這讓您可以連續遊玩謎題並累積連勝紀錄。" },
+                    { q: "有 Pips 謎題檔案館嗎？", a: "由於每個謎題都是實時程序生成的，每次點擊「新遊戲」時，您實際上都擁有一個無限的獨特內容檔案庫。" },
+                    { q: "如何獲勝？", a: "將所有可用的骨牌放入棋盤，使每個彩色區域都滿足其特定的數學條件即可獲勝。" },
+                    { q: "會保存我的進度嗎？", a: "是的，您的遊玩次數和連勝紀錄會自動保存在您的瀏覽器中。" }
+                ],
+                nytTitle: "關於紐約時報遊戲",
+                nytDesc: "紐約時報遊戲（NYT Games）憑藉 Wordle、Connections 和 Mini Crossword 等每日謎題吸引了數百萬玩家。這些遊戲因激發思維和培養解謎社區而備受讚譽。Pips Game 的靈感來自這種每日智力挑戰的傳統，但專注於獨特的骨牌邏輯謎題。雖然我們欽佩 NYT Games 的創造力，但 Pips Game 是一個獨立項目，致力於免費提供無限的數學和空間推理謎題。"
+            },
+            footer: {
+                about: "關於我們",
+                sitemap: "網站地圖",
+                terms: "使用條款",
+                privacy: "隱私政策",
+                disclaimer: "適用申明",
+                friendlyLinks: "友情鏈接"
+            },
+            modals: {
+                about: {
+                    title: "關於我們",
+                    content: "Pips Game 由一群熱愛解謎的團隊創建，致力於免費為網路帶來高質量的邏輯挑戰。我們的使命是通過永不枯竭的程序生成謎題來保持您的大腦敏銳。我們堅信遊戲應該是易於訪問的——沒有廣告，沒有付費牆，只有純粹的策略。"
+                },
+                sitemap: {
+                    title: "網站地圖",
+                    content: "導航 Pips 遊戲：",
+                    links: ["主遊戲棋盤", "遊戲規則與教學", "設置與主題", "無限模式", "統計與進度", "關於與法律信息"]
+                },
+                terms: {
+                    title: "使用條款",
+                    content: "歡迎來到 Pips Game。訪問我們的網站即表示您同意將其用於個人非商業娛樂。本遊戲按「原樣」提供，不提供任何形式的保證。我們保留隨時更新遊戲功能和規則的權利。公平遊戲，享受樂趣，鍛煉大腦！"
+                },
+                privacy: {
+                    title: "隱私政策",
+                    content: "我們重視您的隱私。Pips Game 不會收集任何個人身份信息。所有遊戲進度（包括「已遊玩」次數和「連勝」記錄）均使用瀏覽器 LocalStorage 本地存儲在您的設備上。我們不會出於廣告目的使用追踪 Cookie。"
+                },
+                disclaimer: {
+                    title: "適用申明",
+                    content: "Pips Game 是一個獨立項目，不隸屬於紐約時報公司 (The New York Times Company) 或 NYT Games，也不受其認可或與之相關。與其他益智遊戲的任何相似之處純屬類型精神。所有邏輯和代碼均為原創。"
+                }
+            }
+          },
+          ru: {
+            title: "Игра Pips",
+            subtitle: "Бесконечные пазлы домино",
+            newGame: "Новая игра",
+            reset: "Сброс",
+            howToPlay: "Как играть",
+            settings: "Настройки",
+            share: "Поделиться",
+            theme: "Тема",
+            language: "Язык",
+            played: "Сыграно",
+            congrats: "Пазл решен!",
+            mode: "Режим игры",
+            classic: "Классический",
+            unlimited: "Бесконечный",
+            streak: "Серия",
+            nextPuzzle: "Следующий пазл через",
+            rules: {
+              title: "Как играть",
+              desc1: "Заполните доску костяшками домино, соблюдая условия.",
+              desc2: "Нажмите, чтобы выбрать и повернуть. Перетащите или нажмите на доску для размещения.",
+              desc3: "У цветных областей есть условия:",
+              sum: "Число (2): Сумма должна быть равна числу",
+              eq: "Равно (=): Все точки одинаковы",
+              neq: "Не равно (≠): Все точки разные",
+              lt: "<8: Сумма меньше этого",
+              gt: ">2: Сумма больше этого",
+              even: "E: Сумма четная",
+              odd: "OD: Сумма нечетная",
+              no6: "∅6: Без шестерок",
+              prod: "×12: Произведение равно числу",
+              prime: "P: Только простые числа (2, 3, 5)"
+            },
+            changelog: "История изменений",
+            feedback: "Обратная связь",
+            footerDisclaimer: "Не связано с NYT Games.",
+            colors: {
+                classic: "Классика",
+                dark: "Темный",
+                ocean: "Океан",
+                forest: "Лес",
+                sunset: "Закат"
+            },
+            sections: {
+                aboutTitle: "Об игре Pips",
+                aboutDesc: "Pips Game — это бесплатная онлайн-головоломка с домино. Стратегически размещайте костяшки, чтобы решать задачи разной сложности. Сочетает классическое домино с логикой судоку.",
+                featuresTitle: "Особенности",
+                features: [
+                    { t: "Pips Unlimited", d: "Задачи никогда не заканчиваются. Наш умный движок генерирует бесконечное количество уникальных пазлов." },
+                    { t: "Разные темы", d: "Переключайтесь между Классикой, Темным режимом, Океаном и другими стилями во время игры." },
+                    { t: "Тренировка логики", d: "Улучшайте навыки с помощью математических условий (сумма, произведение, простые числа)." }
+                ],
+                faqTitle: "Частые вопросы",
+                faq: [
+                    { q: "Игра Pips бесплатна?", a: "Да, вы можете играть в Pips Game полностью бесплатно онлайн на любом устройстве без скачивания." },
+                    { q: "Как включить режим Pips Unlimited?", a: "Просто откройте настройки и переключите режим игры на «Бесконечный». Это позволит играть непрерывно и строить серии побед." },
+                    { q: "Есть ли архив Pips?", a: "Поскольку каждый пазл генерируется процедурно, у вас есть доступ к фактически бесконечному архиву уникального контента." },
+                    { q: "Как выиграть?", a: "Разместите все домино так, чтобы каждая цветная область выполняла свое условие." },
+                    { q: "Прогресс сохраняется?", a: "Да, количество игр и серии побед автоматически сохраняются в вашем браузере." }
+                ],
+                nytTitle: "О NYT Games",
+                nytDesc: "Игры New York Times (NYT Games) увлекли миллионы людей ежедневными головоломками, такими как Wordle и Crossword. Pips Game вдохновлена этой традицией интеллектуальных вызовов, но фокусируется на уникальных логических задачах с домино. Это независимый проект, предлагающий бесконечные математические головоломки."
+            },
+            footer: {
+                about: "О нас",
+                sitemap: "Карта сайта",
+                terms: "Условия использования",
+                privacy: "Конфиденциальность",
+                disclaimer: "Отказ от ответственности",
+                friendlyLinks: "Дружественные ссылки"
+            },
+            modals: {
+                about: {
+                    title: "О нас",
+                    content: "Pips Game создана небольшой командой энтузиастов головоломок. Наша миссия — поддерживать ваш ум в тонусе с помощью бесконечных логических задач. Мы верим в доступные игры: без рекламы, без платного контента, только чистая стратегия."
+                },
+                sitemap: {
+                    title: "Карта сайта",
+                    content: "Навигация:",
+                    links: ["Игровое поле", "Правила и обучение", "Настройки и темы", "Бесконечный режим", "Статистика", "О нас и правовая информация"]
+                },
+                terms: {
+                    title: "Условия использования",
+                    content: "Добро пожаловать в Pips Game. Используя наш сайт, вы соглашаетесь использовать его для личного некоммерческого развлечения. Игра предоставляется «как есть». Мы оставляем за собой право обновлять функции и правила игры."
+                },
+                privacy: {
+                    title: "Конфиденциальность",
+                    content: "Мы ценим вашу конфиденциальность. Pips Game не собирает никакой личной информации. Весь прогресс игры сохраняется локально на вашем устройстве."
+                },
+                disclaimer: {
+                    title: "Отказ от ответственности",
+                    content: "Pips Game — независимый проект, НЕ связанный с The New York Times Company. Любое сходство с другими головоломками носит исключительно жанровый характер."
+                }
+            }
+          },
+          es: {
+            title: "Juego Pips",
+            subtitle: "Puzzles de dominó ilimitados",
+            newGame: "Nuevo Juego",
+            reset: "Reiniciar",
+            howToPlay: "Cómo jugar",
+            settings: "Ajustes",
+            share: "Compartir",
+            theme: "Tema",
+            language: "Idioma",
+            played: "Jugado",
+            congrats: "¡Puzzle Resuelto!",
+            mode: "Modo de juego",
+            classic: "Clásico",
+            unlimited: "Ilimitado",
+            streak: "Racha",
+            nextPuzzle: "Siguiente en",
+            rules: {
+              title: "Cómo jugar",
+              desc1: "Llena el tablero con fichas cumpliendo las condiciones.",
+              desc2: "Toca para seleccionar y rotar. Arrastra o toca el tablero para colocar.",
+              desc3: "Las regiones coloreadas tienen condiciones:",
+              sum: "Número (2): La suma debe ser igual a esto",
+              eq: "Igual (=): Todos los puntos son iguales",
+              neq: "Distinto (≠): Todos los puntos son diferentes",
+              lt: "<8: Suma menor que esto",
+              gt: ">2: Suma mayor que esto",
+              even: "E: Suma Par",
+              odd: "OD: Suma Impar",
+              no6: "∅6: Sin 6s",
+              prod: "×12: Producto igual a esto",
+              prime: "P: Solo números primos (2, 3, 5)"
+            },
+            changelog: "Cambios",
+            feedback: "Comentarios",
+            footerDisclaimer: "No afiliado a NYT Games.",
+            colors: {
+                classic: "Clásico",
+                dark: "Oscuro",
+                ocean: "Océano",
+                forest: "Bosque",
+                sunset: "Atardecer"
+            },
+            sections: {
+                aboutTitle: "Sobre Pips Game",
+                aboutDesc: "Pips Game es un puzzle de dominó ilimitado y gratuito. Coloca las fichas estratégicamente para resolver desafíos. Combina el dominó clásico con la lógica del Sudoku.",
+                featuresTitle: "Características",
+                features: [
+                    { t: "Pips Ilimitado", d: "Nunca te quedes sin retos. Nuestro motor genera un número infinito de puzzles únicos para jugar sin fin." },
+                    { t: "Múltiples Temas", d: "Cambia entre Clásico, Modo Oscuro, Océano y más para adaptar el estilo a tu gusto." },
+                    { t: "Entrenamiento Lógico", d: "Mejora tus habilidades con condiciones matemáticas como Suma, Producto y Primos." }
+                ],
+                faqTitle: "Preguntas Frecuentes",
+                faq: [
+                    { q: "¿Es gratis jugar a Pips Game?", a: "Sí, puedes jugar a Pips Game totalmente gratis online en cualquier dispositivo sin descargas." },
+                    { q: "¿Cómo accedo al modo Pips Ilimitado?", a: "Simplemente abre Configuración y cambia el Modo de Juego a 'Ilimitado'. Esto te permite jugar puzzles continuos y aumentar tu racha." },
+                    { q: "¿Existe un Archivo de Pips?", a: "Como cada puzzle se genera procedimentalmente, tienes acceso a un archivo infinito de contenido único cada vez que inicias un Nuevo Juego." },
+                    { q: "¿Cómo gano?", a: "Coloca todas las fichas de modo que cada región cumpla su condición matemática específica." },
+                    { q: "¿Se guarda mi progreso?", a: "Sí, tus partidas jugadas y rachas se guardan automáticamente en tu navegador." }
+                ],
+                nytTitle: "Sobre NYT Games",
+                nytDesc: "The New York Times Games (NYT Games) ha cautivado a millones con puzzles diarios como Wordle y el Crucigrama. Pips Game se inspira en esta tradición de desafíos intelectuales pero se enfoca en puzzles lógicos de dominó. Pips Game es un proyecto independiente dedicado a ofrecer puzzles matemáticos ilimitados."
+            },
+            footer: {
+                about: "Sobre Nosotros",
+                sitemap: "Mapa del sitio",
+                terms: "Términos de uso",
+                privacy: "Privacidad",
+                disclaimer: "Aviso legal",
+                friendlyLinks: "Enlaces amigos"
+            },
+            modals: {
+                about: {
+                    title: "Sobre Nosotros",
+                    content: "Pips Game fue creado por un pequeño equipo dedicado a traer desafíos lógicos de alta calidad a la web de forma gratuita. Nuestra misión es mantener tu mente ágil con puzzles generados proceduralmente. Creemos en el juego accesible: sin anuncios, sin pagos, solo estrategia pura."
+                },
+                sitemap: {
+                    title: "Mapa del Sitio",
+                    content: "Navegación:",
+                    links: ["Tablero Principal", "Reglas y Tutorial", "Ajustes y Temas", "Modo Ilimitado", "Estadísticas", "Legal"]
+                },
+                terms: {
+                    title: "Términos de Uso",
+                    content: "Bienvenido a Pips Game. Al acceder a nuestro sitio, aceptas usarlo para entretenimiento personal no comercial. El juego se proporciona 'tal cual'. Nos reservamos el derecho de actualizar las funciones y reglas del juego."
+                },
+                privacy: {
+                    title: "Política de Privacidad",
+                    content: "Valoramos tu privacidad. Pips Game no recopila ninguna información de identificación personal. Todo el progreso del juego se almacena localmente en tu dispositivo."
+                },
+                disclaimer: {
+                    title: "Aviso Legal",
+                    content: "Pips Game es un proyecto independiente y NO está afiliado a The New York Times Company. Cualquier parecido con otros juegos es puramente por el género del juego."
+                }
+            }
+          },
+          hi: {
+            title: "Pips खेल",
+            subtitle: "असीमित डोमिनोज़ पहेलियाँ",
+            newGame: "नया खेल",
+            reset: "रीसेट",
+            howToPlay: "कैसे खेलें",
+            settings: "सेटिंग्स",
+            share: "साझा करें",
+            theme: "विषय",
+            language: "भाषा",
+            played: "खेला गया",
+            congrats: "पहेली हल हो गई!",
+            mode: "खेल मोड",
+            classic: "क्लासिक",
+            unlimited: "असीमित",
+            streak: "लगातार जीत",
+            nextPuzzle: "अगली पहेली",
+            rules: {
+              title: "कैसे खेलें",
+              desc1: "शर्तों को पूरा करने के लिए बोर्ड भरें।",
+              desc2: "चुनने और घुमाने के लिए टैप करें। रखने के लिए बोर्ड पर खींचें या टैप करें।",
+              desc3: "रंगीन क्षेत्रों में शर्तें होती हैं:",
+              sum: "संख्या (2): योग बराबर होना चाहिए",
+              eq: "समान (=): सभी बिंदु समान",
+              neq: "असमान (≠): सभी बिंदु अलग",
+              lt: "<8: योग इससे कम",
+              gt: ">2: योग इससे अधिक",
+              even: "E: योग सम (Even)",
+              odd: "OD: योग विषम (Odd)",
+              no6: "∅6: कोई 6 नहीं",
+              prod: "×12: गुणनफल इसके बराबर",
+              prime: "P: केवल अभाज्य संख्याएँ (2, 3, 5)"
+            },
+            changelog: "परिवर्तन",
+            feedback: "प्रतिक्रिया",
+            footerDisclaimer: "NYT Games से संबद्ध नहीं।",
+            colors: {
+                classic: "क्लासिक",
+                dark: "डार्क मोड",
+                ocean: "महासागर",
+                forest: "वन",
+                sunset: "सूर्यास्त"
+            },
+            sections: {
+                aboutTitle: "Pips खेल के बारे में",
+                aboutDesc: "Pips Game एक असीमित मुफ्त ऑनलाइन डोमिनो पहेली है। चुनौतियों को हल करने के लिए रणनीतिक रूप से डोमिनो रखें।",
+                featuresTitle: "विशेषताएँ",
+                features: [
+                    { t: "Pips Unlimited", d: "चुनौतियां कभी खत्म नहीं होतीं। हमारा स्मार्ट इंजन अंतहीन खेल के लिए अनंत अनूठी पहेलियाँ उत्पन्न करता है।" },
+                    { t: "कई विषय", d: "Pips खेलते समय अपनी शैली के अनुरूप क्लासिक, डार्क मोड, महासागर और अन्य के बीच स्विच करें।" },
+                    { t: "तर्क प्रशिक्षण", d: "गणितीय शर्तों के साथ अपने कौशल में सुधार करें।" }
+                ],
+                faqTitle: "सामान्य प्रश्न",
+                faq: [
+                    { q: "क्या Pips Game खेलना मुफ़्त है?", a: "हाँ, आप बिना किसी डाउनलोड के किसी भी डिवाइस पर पूरी तरह से मुफ़्त ऑनलाइन Pips Game खेल सकते हैं।" },
+                    { q: "मैं Pips Unlimited मोड कैसे खेलूं?", a: "बस सेटिंग्स खोलें और गेम मोड को 'असीमित' पर टॉगल करें। यह आपको लगातार पहेलियाँ खेलने और अपनी जीत की लय (streak) बनाने की अनुमति देता है।" },
+                    { q: "क्या कोई Pips आर्काइव (Archive) है?", a: "चूंकि हर पहेली वास्तविक समय में प्रक्रियात्मक रूप से उत्पन्न होती है, इसलिए हर बार जब आप नया गेम क्लिक करते हैं तो आपके पास अद्वितीय सामग्री के अनंत संग्रह तक पहुंच होती है।" },
+                    { q: "मैं कैसे जीतूँ?", a: "सभी डोमिनो को बोर्ड पर रखें ताकि प्रत्येक रंगीन क्षेत्र अपनी विशिष्ट गणितीय शर्त पूरी करे।" },
+                    { q: "क्या मेरी प्रगति सुरक्षित है?", a: "हाँ, आपके खेले गए गेम और जीत का रिकॉर्ड स्वचालित रूप से आपके ब्राउज़र में सहेजा जाता है।" }
+                ],
+                nytTitle: "NYT Games के बारे में",
+                nytDesc: "The New York Times Games (NYT Games) ने Wordle और क्रॉसवर्ड जैसी दैनिक पहेलियों से लाखों लोगों को मंत्रमुग्ध किया है। Pips Game इस परंपरा से प्रेरित है लेकिन डोमिनो-आधारित तर्क पहेलियों पर विशिष्ट रूप से केंद्रित है। जबकि हम NYT Games की रचनात्मकता की प्रशंसा करते हैं, Pips Game एक स्वतंत्र परियोजना है।"
+            },
+            footer: {
+                about: "हमारे बारे में",
+                sitemap: "साइटमैप",
+                terms: "उपयोग की शर्तें",
+                privacy: "गोपनीयता नीति",
+                disclaimer: "अस्वीकरण",
+                friendlyLinks: "मैत्रीपूर्ण लिंक"
+            },
+            modals: {
+                about: {
+                    title: "हमारे बारे में",
+                    content: "Pips Game पहेली उत्साही लोगों की एक छोटी टीम द्वारा बनाया गया था जो वेब पर उच्च गुणवत्ता वाली तर्क चुनौतियों को मुफ्त में लाने के लिए समर्पित है। हमारा मिशन प्रक्रियात्मक रूप से उत्पन्न पहेलियों के साथ आपके दिमाग को तेज रखना है।"
+                },
+                sitemap: {
+                    title: "साइटमैप",
+                    content: "नेविगेट करें:",
+                    links: ["मुख्य खेल", "नियम", "सेटिंग्स", "असीमित मोड", "सांख्यिकी", "कानूनी"]
+                },
+                terms: {
+                    title: "उपयोग की शर्तें",
+                    content: "Pips Game में आपका स्वागत है। हमारी वेबसाइट का उपयोग करके, आप इसे व्यक्तिगत गैर-व्यावसायिक मनोरंजन के लिए उपयोग करने के लिए सहमत हैं। खेल 'जैसा है' प्रदान किया जाता है।"
+                },
+                privacy: {
+                    title: "गोपनीयता नीति",
+                    content: "हम आपकी गोपनीयता को महत्व देते हैं। Pips Game कोई भी व्यक्तिगत पहचान योग्य जानकारी एकत्र नहीं करता है। सभी खेल प्रगति आपके डिवाइस पर स्थानीय रूप से संग्रहीत की जाती है।"
+                },
+                disclaimer: {
+                    title: "अस्वीकरण",
+                    content: "Pips Game एक स्वतंत्र परियोजना है और The New York Times Company से संबद्ध नहीं है। अन्य पहेली खेलों से कोई भी समानता विशुद्ध रूप से शैली की भावना में है।"
+                }
+            }
+          },
+          pl: {
+            title: "Gra Pips",
+            subtitle: "Nielimitowane puzzle domino",
+            newGame: "Nowa Gra",
+            reset: "Reset",
+            howToPlay: "Jak grać",
+            settings: "Ustawienia",
+            share: "Udostępnij",
+            theme: "Motyw",
+            language: "Język",
+            played: "Rozegrano",
+            congrats: "Rozwiązano!",
+            mode: "Tryb gry",
+            classic: "Klasyczny",
+            unlimited: "Nielimitowany",
+            streak: "Seria",
+            nextPuzzle: "Następne za",
+            rules: {
+              title: "Jak grać",
+              desc1: "Wypełnij planszę kostkami spełniając warunki.",
+              desc2: "Dotknij, aby wybrać i obrócić. Przeciągnij lub dotknij planszy, aby umieścić.",
+              desc3: "Kolorowe obszary mają warunki:",
+              sum: "Liczba (2): Suma musi być równa",
+              eq: "Równe (=): Wszystkie kropki takie same",
+              neq: "Różne (≠): Wszystkie kropki różne",
+              lt: "<8: Suma mniejsza niż",
+              gt: ">2: Suma większa niż",
+              even: "E: Suma Parzysta",
+              odd: "OD: Suma Nieparzysta",
+              no6: "∅6: Bez szóstek",
+              prod: "×12: Iloczyn równy liczbie",
+              prime: "P: Tylko liczby pierwsze (2, 3, 5)"
+            },
+            changelog: "Zmiany",
+            feedback: "Opinie",
+            footerDisclaimer: "Brak powiązania z NYT Games.",
+            colors: {
+                classic: "Klasyczny",
+                dark: "Ciemny",
+                ocean: "Morski",
+                forest: "Leśny",
+                sunset: "Zachód"
+            },
+            sections: {
+                aboutTitle: "O grze Pips",
+                aboutDesc: "Pips Game to darmowa łamigłówka domino online. Układaj kostki strategicznie, aby rozwiązywać zagadki.",
+                featuresTitle: "Cechy gry",
+                features: [
+                    { t: "Pips Unlimited", d: "Wyzwania nigdy się nie kończą. Nasz inteligentny silnik generuje nieskończoną liczbę unikalnych puzzli." },
+                    { t: "Wiele motywów", d: "Przełączaj między trybem klasycznym, ciemnym, morskim i innymi, aby dopasować styl gry." },
+                    { t: "Trening logiki", d: "Popraw swoje umiejętności matematyczne i logiczne dzięki różnym warunkom." }
+                ],
+                faqTitle: "Częste pytania",
+                faq: [
+                    { q: "Czy gra Pips jest darmowa?", a: "Tak, możesz grać w Pips Game całkowicie za darmo online na dowolnym urządzeniu bez pobierania." },
+                    { q: "Jak włączyć tryb Pips Unlimited?", a: "Po prostu otwórz Ustawienia i przełącz tryb gry na 'Nielimitowany'. Pozwala to na ciągłą grę i budowanie serii zwycięstw." },
+                    { q: "Czy istnieje archiwum Pips?", a: "Ponieważ każdy puzzle jest generowany proceduralnie w czasie rzeczywistym, masz dostęp do faktycznie nieskończonego archiwum unikalnych treści." },
+                    { q: "Jak wygrać?", a: "Umieść wszystkie dostępne kostki na planszy tak, aby każdy kolorowy obszar spełniał swój specyficzny warunek matematyczny." },
+                    { q: "Czy postęp jest zapisywany?", a: "Tak, liczba rozegranych gier i serie są automatycznie zapisywane w Twojej przeglądarce." }
+                ],
+                nytTitle: "O NYT Games",
+                nytDesc: "Gry New York Times (NYT Games) przyciągnęły miliony graczy codziennymi łamigłówkami, takimi jak Wordle i Krzyżówka. Gra Pips jest inspirowana tą tradycją, ale skupia się na unikalnych łamigłówkach logicznych z dominem. To niezależny projekt oferujący darmowe zagadki logiczne."
+            },
+            footer: {
+                about: "O nas",
+                sitemap: "Mapa strony",
+                terms: "Warunki",
+                privacy: "Prywatność",
+                disclaimer: "Oświadczenie",
+                friendlyLinks: "Przyjazne linki"
+            },
+            modals: {
+                about: {
+                    title: "O nas",
+                    content: "Gra Pips została stworzona przez mały zespół entuzjastów łamigłówek. Naszą misją jest utrzymanie sprawności Twojego umysłu dzięki proceduralnie generowanym zagadkom. Wierzymy w dostępne gry: bez reklam i bez opłat."
+                },
+                sitemap: {
+                    title: "Mapa strony",
+                    content: "Nawigacja:",
+                    links: ["Gra", "Zasady", "Ustawienia", "Tryb Nielimitowany", "Statystyki", "Prawne"]
+                },
+                terms: {
+                    title: "Warunki użytkowania",
+                    content: "Witamy w Pips Game. Uzyskując dostęp do naszej strony, zgadzasz się używać jej do osobistej, niekomercyjnej rozrywki. Gra jest dostarczana „taka jaka jest”."
+                },
+                privacy: {
+                    title: "Polityka prywatności",
+                    content: "Szanujemy Twoją prywatność. Pips Game nie zbiera żadnych danych osobowych. Cały postęp gry jest zapisywany lokalnie na Twoim urządzeniu."
+                },
+                disclaimer: {
+                    title: "Oświadczenie",
+                    content: "Pips Game to niezależny projekt i NIE jest powiązany z The New York Times Company. Wszelkie podobieństwa do innych gier są przypadkowe."
+                }
+            }
+          }
+        };
+
+        // --- 工具函数 ---
+        const getRandomInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+        const isPrime = (num) => [2, 3, 5].includes(num);
+
+        // --- 约束类型生成器 ---
+        const CONSTRAINT_TYPES = ['SUM', 'EQUAL', 'NOT_EQUAL', 'LESS', 'GREATER', 'EVEN', 'ODD', 'NO_6', 'PRODUCT', 'PRIME'];
+
+        const generateConstraintForRegion = (cells) => {
+          const values = cells.map(c => c.value);
+          const sum = values.reduce((a, b) => a + b, 0);
+          const uniqueValues = new Set(values);
+          const product = values.reduce((a, b) => a * b, 1);
+          const allPrime = values.every(v => isPrime(v));
+          
+          const possible = [];
+          possible.push({ type: 'SUM', value: sum, label: `${sum}` });
+          if (uniqueValues.size === 1) possible.push({ type: 'EQUAL', label: '=' });
+          if (uniqueValues.size === values.length && values.length > 1) possible.push({ type: 'NOT_EQUAL', label: '≠' });
+          if (sum < 15) possible.push({ type: 'LESS', value: sum + getRandomInt(1, 3), label: `<${sum + getRandomInt(1, 3)}` });
+          if (sum > 5) possible.push({ type: 'GREATER', value: sum - getRandomInt(1, 3), label: `>${sum - getRandomInt(1, 3)}` });
+          if (sum % 2 === 0) possible.push({ type: 'EVEN', label: 'E' });
+          if (sum % 2 !== 0) possible.push({ type: 'ODD', label: 'OD' });
+          if (!values.includes(6)) possible.push({ type: 'NO_6', label: '∅6' });
+          if (product < 100 && product > 0) possible.push({ type: 'PRODUCT', value: product, label: `×${product}` });
+          if (allPrime) possible.push({ type: 'PRIME', label: 'P' });
+
+          if (Math.random() > 0.5) return possible[0]; 
+          return possible[Math.floor(Math.random() * possible.length)];
+        };
+
+        const DominoPip = ({ value, size = "w-2 h-2" }) => {
+            const positions = {
+                0: [],
+                1: [4],
+                2: [0, 8],
+                3: [0, 4, 8],
+                4: [0, 2, 6, 8],
+                5: [0, 2, 4, 6, 8],
+                6: [0, 2, 3, 5, 6, 8]
+            };
+            const pips = positions[value] || [];
+            
+            return (
+                <div className="grid grid-cols-3 gap-0.5 p-0.5 w-full h-full pointer-events-none">
+                    {[...Array(9)].map((_, i) => (
+                        <div key={i} className="flex items-center justify-center">
+                            {pips.includes(i) && (
+                                <div className={`rounded-full bg-current ${size}`} />
+                            )}
+                        </div>
+                    ))}
+                </div>
+            );
+        };
+
+        // --- 主组件 ---
+        function PipsGame() {
+          const [lang, setLang] = useState('en');
+          const [theme, setTheme] = useState('classic');
+          const [board, setBoard] = useState([]);
+          const [regions, setRegions] = useState([]);
+          const [inventory, setInventory] = useState([]);
+          const [placedDominoes, setPlacedDominoes] = useState([]);
+          const [dragging, setDragging] = useState(null);
+          const [selectedDomino, setSelectedDomino] = useState(null); // Mobile selection state
+          const [gameWon, setGameWon] = useState(false);
+          const [showRules, setShowRules] = useState(false);
+          const [showSettings, setShowSettings] = useState(false);
+          const [stats, setStats] = useState({ played: 0 });
+          const [gameMode, setGameMode] = useState('classic'); 
+          const [streak, setStreak] = useState(0);
+          const [nextLevelTimer, setNextLevelTimer] = useState(null);
+          
+          // 新增弹窗状态
+          const [activeModal, setActiveModal] = useState(null); 
+
+          const t = TRANSLATIONS[lang] || TRANSLATIONS['en'];
+          const currentYear = new Date().getFullYear();
+
+          // Script Injection
+          useEffect(() => {
+            const scriptSrc = '/scripts/related.js';
+            if (!document.querySelector(`script[src="${scriptSrc}"]`)) {
+                const script = document.createElement('script');
+                script.src = scriptSrc;
+                script.async = true;
+                document.body.appendChild(script);
+            }
+          }, []);
+
+          // URL 参数处理
+          useEffect(() => {
+            try {
+                const params = new URLSearchParams(window.location.search);
+                const urlLang = params.get('lang');
+                if (urlLang && TRANSLATIONS[urlLang]) {
+                  setLang(urlLang);
+                }
+            } catch (e) {
+                console.warn("Could not read URL parameters", e);
+            }
+          }, []);
+
+          const changeLanguage = (newLang) => {
+            setLang(newLang);
+            try {
+                const url = new URL(window.location);
+                url.searchParams.set('lang', newLang);
+                window.history.pushState({}, '', url);
+            } catch (e) {
+                console.warn("URL update blocked by environment:", e);
+            }
+          };
+
+          const generateGame = (keepStreak = false) => {
+            setGameWon(false);
+            setPlacedDominoes([]);
+            setNextLevelTimer(null);
+            setSelectedDomino(null);
+            if (!keepStreak) setStreak(0);
+            
+            const ROWS = 6;
+            const COLS = 6;
+            let tempBoard = [];
+            for(let r=0; r<ROWS; r++) {
+                for(let c=0; c<COLS; c++) {
+                    tempBoard.push({ id: r*COLS+c, r, c, value: null, regionId: null });
+                }
+            }
+
+            let availableCells = [...tempBoard.map(c => c.id)];
+            let tempDominoes = [];
+            let domIdCounter = 0;
+
+            while(availableCells.length >= 2) {
+                const cellIdx = Math.floor(Math.random() * availableCells.length);
+                const cellId = availableCells[cellIdx];
+                const cell = tempBoard.find(c => c.id === cellId);
+                
+                const neighbors = [
+                    {r: cell.r+1, c: cell.c}, {r: cell.r, c: cell.c+1},
+                    {r: cell.r-1, c: cell.c}, {r: cell.r, c: cell.c-1}
+                ].filter(n => n.r>=0 && n.r<ROWS && n.c>=0 && n.c<COLS);
+                
+                const validNeighbor = neighbors.find(n => availableCells.includes(n.r*COLS + n.c));
+                
+                if(validNeighbor) {
+                    const neighborId = validNeighbor.r*COLS + validNeighbor.c;
+                    const v1 = getRandomInt(0, 6);
+                    const v2 = getRandomInt(0, 6);
+                    
+                    tempBoard[cellId].value = v1;
+                    tempBoard[neighborId].value = v2;
+
+                    tempDominoes.push({
+                        id: `dom-${domIdCounter++}`,
+                        v1, v2,
+                        rotated: false,
+                        placed: false
+                    });
+
+                    availableCells = availableCells.filter(id => id !== cellId && id !== neighborId);
+                } else {
+                    availableCells = availableCells.filter(id => id !== cellId);
+                }
+            }
+
+            let seeds = [];
+            const numRegions = 8;
+            for(let i=0; i<numRegions; i++) {
+                seeds.push({ 
+                    center: Math.floor(Math.random() * (ROWS*COLS)),
+                    colorIdx: i 
+                });
+            }
+            
+            tempBoard.forEach(cell => {
+                let minKey = -1;
+                let minDist = 999;
+                seeds.forEach((seed, idx) => {
+                    const seedR = Math.floor(seed.center / COLS);
+                    const seedC = seed.center % COLS;
+                    const dist = Math.abs(cell.r - seedR) + Math.abs(cell.c - seedC);
+                    if(dist < minDist) {
+                        minDist = dist;
+                        minKey = idx;
+                    }
+                });
+                cell.regionId = minKey;
+            });
+
+            const newRegions = [];
+            for(let i=0; i<numRegions; i++) {
+                const regionCells = tempBoard.filter(c => c.regionId === i);
+                if(regionCells.length === 0) continue;
+                regionCells.forEach(c => { if(c.value === null) c.value = 0; });
+
+                const constraint = generateConstraintForRegion(regionCells);
+                newRegions.push({
+                    id: i,
+                    cells: regionCells.map(c => c.id),
+                    constraint: constraint,
+                    colorIndex: i 
+                });
+            }
+
+            tempBoard.forEach(c => c.value = null);
+            
+            setBoard(tempBoard);
+            setRegions(newRegions);
+            setInventory(tempDominoes);
+          };
+
+          useEffect(() => {
+            generateGame();
+          }, []);
+
+          const rotateDomino = (domId) => {
+            setInventory(prev => prev.map(d => {
+              if (d.id === domId) return { ...d, v1: d.v2, v2: d.v1, rotated: !d.rotated };
+              return d;
+            }));
+          };
+
+          const handleDragStart = (e, domino) => {
+            setDragging(domino);
+            setSelectedDomino(domino); // Also select on drag for hybrid feel
+            e.dataTransfer.setData('text/plain', domino.id);
+            e.dataTransfer.effectAllowed = "move";
+          };
+
+          const handleInventoryClick = (domino) => {
+              if (selectedDomino && selectedDomino.id === domino.id) {
+                  rotateDomino(domino.id);
+              } else {
+                  setSelectedDomino(domino);
+              }
+          };
+
+          const handleDrop = (e, cellId) => {
+            e.preventDefault();
+            if (dragging) {
+                attemptPlacement(dragging, cellId);
+                setDragging(null);
+            }
+          };
+
+          const handleCellClick = (cellId) => {
+              if (selectedDomino) {
+                  attemptPlacement(selectedDomino, cellId);
+              }
+          };
+
+          const attemptPlacement = (domino, cellId) => {
+            const targetCell = board.find(c => c.id === cellId);
+            if (!targetCell) return;
+
+            const ROWS = 6; const COLS = 6;
+            const r = targetCell.r;
+            const c = targetCell.c;
+
+            let secondCellId = null;
+            let orientation = 'h';
+            
+            if (c + 1 < COLS) {
+                secondCellId = r * COLS + (c + 1);
+            } else if (r + 1 < ROWS) {
+                secondCellId = (r + 1) * COLS + c;
+                orientation = 'v';
+            }
+
+            const occupied = placedDominoes.some(pd => pd.cell1 === cellId || pd.cell2 === cellId || pd.cell1 === secondCellId || pd.cell2 === secondCellId);
+            
+            if (secondCellId !== null && !occupied) {
+                placeDomino(domino, cellId, secondCellId, orientation);
+                setSelectedDomino(null);
+            }
+          };
+
+          const placeDomino = (domino, c1, c2, orientation) => {
+            const newPlaced = {
+                id: Date.now(),
+                domId: domino.id,
+                cell1: c1,
+                cell2: c2,
+                v1: domino.v1,
+                v2: domino.v2,
+                orientation
+            };
+            
+            setPlacedDominoes([...placedDominoes, newPlaced]);
+            setInventory(inventory.filter(d => d.id !== domino.id));
+          };
+
+          const removeDomino = (placedId) => {
+            const placed = placedDominoes.find(p => p.id === placedId);
+            if (!placed) return;
+            setInventory([...inventory, { id: placed.domId, v1: placed.v1, v2: placed.v2, rotated: false }]);
+            setPlacedDominoes(placedDominoes.filter(p => p.id !== placedId));
+          };
+
+          const validationState = useMemo(() => {
+            const result = {}; 
+            regions.forEach(region => {
+                const cellValues = [];
+                let isFull = true;
+                region.cells.forEach(cellId => {
+                    const placement = placedDominoes.find(p => p.cell1 === cellId || p.cell2 === cellId);
+                    if (placement) {
+                        if (placement.cell1 === cellId) cellValues.push(placement.v1);
+                        else cellValues.push(placement.v2);
+                    } else {
+                        isFull = false;
+                    }
+                });
+
+                if (!isFull) {
+                    result[region.id] = null;
+                    return;
+                }
+
+                const vals = cellValues;
+                const sum = vals.reduce((a, b) => a + b, 0);
+                const prod = vals.reduce((a, b) => a * b, 1);
+                const type = region.constraint.type;
+                const target = region.constraint.value;
+                
+                let valid = false;
+                switch(type) {
+                    case 'SUM': valid = sum === target; break;
+                    case 'EQUAL': valid = new Set(vals).size === 1; break;
+                    case 'NOT_EQUAL': valid = new Set(vals).size === vals.length; break;
+                    case 'LESS': valid = sum < target; break;
+                    case 'GREATER': valid = sum > target; break;
+                    case 'EVEN': valid = sum % 2 === 0; break;
+                    case 'ODD': valid = sum % 2 !== 0; break;
+                    case 'NO_6': valid = !vals.includes(6); break;
+                    case 'PRODUCT': valid = prod === target; break;
+                    case 'PRIME': valid = vals.every(v => isPrime(v)); break;
+                    default: valid = true;
+                }
+                result[region.id] = valid;
+            });
+            return result;
+          }, [placedDominoes, regions]);
+
+          useEffect(() => {
+            if (regions.length > 0 && placedDominoes.length > 0 && inventory.length === 0) {
+                const allValid = Object.values(validationState).every(v => v === true);
+                if (allValid && !gameWon) {
+                    setGameWon(true);
+                    setStats(s => ({ played: s.played + 1 }));
+                    
+                    if (gameMode === 'unlimited') {
+                        setStreak(s => s + 1);
+                        let count = 3;
+                        setNextLevelTimer(count);
+                        const timer = setInterval(() => {
+                            count--;
+                            if (count <= 0) {
+                                clearInterval(timer);
+                                generateGame(true);
+                            } else {
+                                setNextLevelTimer(count);
+                            }
+                        }, 1000);
+                        return () => clearInterval(timer);
+                    }
+                }
+            } else if (gameWon && inventory.length > 0) {
+                setGameWon(false);
+            }
+          }, [validationState, inventory.length, regions.length, gameMode]);
+
+
+          const themes = {
+            classic: "bg-stone-50 text-stone-900",
+            dark: "bg-slate-900 text-slate-100",
+            ocean: "bg-cyan-50 text-cyan-900",
+            forest: "bg-emerald-50 text-emerald-900",
+            sunset: "bg-orange-50 text-orange-900"
+          };
+          
+          const boardColors = {
+              classic: ["#e7e5e4", "#d6d3d1", "#a8a29e", "#f5f5f4", "#e5e7eb", "#d1d5db", "#9ca3af", "#f3f4f6"],
+              dark: ["#1e293b", "#334155", "#475569", "#0f172a", "#1e1b4b", "#312e81", "#4338ca", "#3730a3"],
+              ocean: ["#ecfeff", "#cffafe", "#a5f3fc", "#67e8f9", "#22d3ee", "#06b6d4", "#0891b2", "#0e7490"], 
+              forest: ["#ecfdf5", "#d1fae5", "#a7f3d0", "#6ee7b7", "#34d399", "#10b981", "#059669", "#047857"],
+              sunset: ["#fff7ed", "#ffedd5", "#fed7aa", "#fdba74", "#fb923c", "#f97316", "#ea580c", "#c2410c"]
+          };
+          
+          const getRegionColor = (idx) => {
+              const pal = boardColors[theme] || boardColors.classic;
+              return pal[idx % pal.length];
+          };
+
+          // Modal Rendering Helper
+          const renderModalContent = () => {
+            if (!activeModal || !t.modals) return null;
+            const modalData = t.modals[activeModal];
+            if (!modalData) return null;
+
+            let Icon = Info;
+            if (activeModal === 'sitemap') Icon = MapIcon;
+            else if (activeModal === 'terms') Icon = ScrollText;
+            else if (activeModal === 'privacy') Icon = Lock;
+            else if (activeModal === 'disclaimer') Icon = AlertTriangle;
+
+            return (
+                <div className="space-y-4">
+                    <div className="flex items-center gap-3 text-indigo-500 mb-2">
+                        <Icon size={32} />
+                        <h3 className="text-xl font-bold">{modalData.title}</h3>
+                    </div>
+                    <div className="prose prose-sm max-w-none opacity-90 leading-relaxed">
+                        <p>{modalData.content}</p>
+                        {activeModal === 'sitemap' && modalData.links && (
+                             <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-4">
+                                {modalData.links.map((link, i) => (
+                                    <li key={i} className="flex items-center gap-2 p-2 bg-black/5 rounded">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
+                                        {link}
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
+                    </div>
+                </div>
+            );
+          };
+
+          return (
+            <div className={`min-h-screen flex flex-col font-sans transition-colors duration-300 ${themes[theme]}`}>
+              
+              {/* Header */}
+              <header className={`p-4 flex justify-between items-center sticky top-0 z-20 backdrop-blur-md bg-opacity-80 border-b border-black/5 ${theme === 'dark' ? 'bg-slate-900/80' : 'bg-white/80'}`}>
+                <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white font-bold text-2xl shadow-lg shadow-indigo-500/30">P</div>
+                    <div>
+                        <h1 className="font-bold text-xl leading-none flex items-center gap-2 tracking-tight">
+                            {t.title}
+                            {gameMode === 'unlimited' && <Zap size={18} className="text-yellow-500 fill-current animate-pulse" />}
+                        </h1>
+                        <p className="text-xs opacity-60 font-mono mt-0.5">#{currentYear-2000}{new Date().getMonth()+1}{new Date().getDate()}</p>
+                    </div>
+                </div>
+                
+                <div className="flex gap-2">
+                    <button onClick={() => setShowRules(true)} className="p-2.5 rounded-full hover:bg-black/5 transition-colors" title={t.howToPlay}>
+                        <HelpCircle size={22} />
+                    </button>
+                    <button onClick={() => setShowSettings(true)} className="p-2.5 rounded-full hover:bg-black/5 transition-colors" title={t.settings}>
+                        <Settings size={22} />
+                    </button>
+                    <button className="p-2.5 rounded-full hover:bg-black/5 transition-colors" title={t.share}>
+                        <Share2 size={22} />
+                    </button>
+                </div>
+              </header>
+
+              {/* Main Game Area */}
+              <main className="flex-grow flex flex-col items-center p-4 max-w-3xl mx-auto w-full z-10">
+                
+                {/* Status Bar */}
+                <div className="w-full flex justify-between items-center mb-6 px-2">
+                    <div className="flex items-center gap-4 text-sm font-semibold opacity-80 bg-black/5 px-4 py-2 rounded-full">
+                        <span>{t.played}: {stats.played}</span>
+                        {gameMode === 'unlimited' && (
+                            <span className="flex items-center gap-1.5 text-orange-500 font-bold border-l border-black/10 pl-4">
+                                <Flame size={16} className="fill-current" /> {t.streak}: {streak}
+                            </span>
+                        )}
+                    </div>
+                    <button onClick={() => generateGame(false)} className="flex items-center gap-2 px-4 py-2 rounded-full bg-indigo-100 text-indigo-700 hover:bg-indigo-200 transition-colors font-medium text-sm">
+                        <RefreshCw size={16} /> {t.newGame}
+                    </button>
+                </div>
+
+                {/* Game Board */}
+                <div className="relative w-full max-w-[420px] mx-auto mb-8">
+                    <div 
+                        className={`grid grid-cols-6 gap-0 border-[3px] rounded-xl overflow-hidden shadow-2xl select-none aspect-square
+                            ${theme === 'dark' ? 'border-slate-700 bg-slate-800' : 'border-stone-300 bg-stone-200'}
+                            ${selectedDomino ? 'ring-4 ring-indigo-400/50 cursor-pointer' : ''}
+                        `}
+                    >
+                        {board.map((cell) => {
+                            const region = regions.find(r => r.id === cell.regionId);
+                            const status = validationState[region?.id];
+                            const isRegionValid = status === true;
+                            const isRegionError = status === false;
+                            const placed = placedDominoes.find(p => p.cell1 === cell.id || p.cell2 === cell.id);
+                            let value = null;
+                            if (placed) {
+                                value = placed.cell1 === cell.id ? placed.v1 : placed.v2;
+                            }
+                            const borderClass = `border-r border-b ${theme === 'dark' ? 'border-slate-700/50' : 'border-stone-400/30'}`;
+
+                            return (
+                                <div 
+                                    key={cell.id}
+                                    onDragOver={(e) => e.preventDefault()}
+                                    onDrop={(e) => handleDrop(e, cell.id)}
+                                    onClick={() => handleCellClick(cell.id)}
+                                    className={`relative flex items-center justify-center aspect-square ${borderClass} transition-colors duration-150
+                                        ${selectedDomino && !placed ? 'hover:bg-indigo-500/20 active:bg-indigo-500/30' : ''}
+                                    `}
+                                    style={{ backgroundColor: !selectedDomino || placed ? getRegionColor(cell.regionId) : undefined }}
+                                >
+                                    {region && region.cells[region.cells.length - 1] === cell.id && (
+                                        <div className={`absolute bottom-[2px] right-[2px] text-[9px] sm:text-[10px] font-bold px-1.5 py-0.5 rounded-md z-0 shadow-sm backdrop-blur-sm
+                                            ${isRegionValid ? 'bg-emerald-500/90 text-white' : isRegionError ? 'bg-rose-500/90 text-white' : 'bg-black/10 text-black/60'}
+                                        `}>
+                                            {region.constraint.label}
+                                        </div>
+                                    )}
+                                    {placed && (
+                                        <div 
+                                            onClick={(e) => { e.stopPropagation(); removeDomino(placed.id); }}
+                                            className={`w-full h-full p-[3px] cursor-pointer transform hover:scale-[0.98] transition-all duration-200 z-10 animate-in fade-in zoom-in duration-300`}
+                                        >
+                                            <div className={`w-full h-full rounded-md shadow-sm border flex items-center justify-center
+                                                ${theme === 'dark' ? 'bg-slate-200 text-slate-900 border-slate-400' : 'bg-white text-stone-900 border-stone-200'}
+                                            `}>
+                                                <DominoPip value={value} size="w-1.5 h-1.5 sm:w-2 sm:h-2" />
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })}
+                    </div>
+
+                    {/* Win Modal */}
+                    {gameWon && (
+                        <div className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none">
+                            <div className="bg-white/95 backdrop-blur-md text-stone-900 px-8 py-6 rounded-2xl shadow-2xl flex flex-col items-center animate-bounce border border-white/50 pointer-events-auto">
+                                <Trophy size={48} className="mb-3 text-yellow-500 fill-yellow-500" />
+                                <h2 className="text-2xl font-bold mb-1">{t.congrats}</h2>
+                                {gameMode === 'unlimited' ? (
+                                    <p className="mt-2 font-medium text-stone-500">{t.nextPuzzle} <span className="text-indigo-600 font-bold text-lg">{nextLevelTimer}s</span></p>
+                                ) : (
+                                    <button onClick={() => generateGame(false)} className="mt-4 px-6 py-2.5 bg-indigo-600 text-white rounded-xl shadow-lg hover:bg-indigo-700 transition-transform active:scale-95 font-bold">
+                                        {t.newGame}
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+                    )}
+                </div>
+
+                {/* Inventory */}
+                <div className="w-full max-w-[420px] mb-12">
+                    <div className={`p-4 rounded-xl min-h-[120px] transition-all duration-300 ${theme === 'dark' ? 'bg-black/20' : 'bg-white/50 shadow-inner'}`}>
+                        <div className="flex flex-wrap justify-center gap-3">
+                            {inventory.map(domino => {
+                                const isSelected = selectedDomino?.id === domino.id;
+                                return (
+                                    <div
+                                        key={domino.id}
+                                        draggable
+                                        onDragStart={(e) => handleDragStart(e, domino)}
+                                        onClick={() => handleInventoryClick(domino)}
+                                        className={`
+                                            w-[68px] h-[34px] rounded-lg border shadow-sm cursor-pointer select-none
+                                            flex items-center transition-all transform duration-200
+                                            ${isSelected 
+                                                ? 'ring-4 ring-indigo-400 border-indigo-500 scale-110 -translate-y-2 z-10' 
+                                                : 'hover:border-indigo-400 hover:-translate-y-0.5'
+                                            }
+                                            ${theme === 'dark' ? 'bg-slate-200 border-slate-400 text-slate-900' : 'bg-white border-stone-300 text-stone-900'}
+                                        `}
+                                    >
+                                        <div className="w-1/2 h-full border-r border-black/10 flex items-center justify-center">
+                                             <DominoPip value={domino.v1} size="w-1.5 h-1.5" />
+                                        </div>
+                                        <div className="w-1/2 h-full flex items-center justify-center">
+                                            <DominoPip value={domino.v2} size="w-1.5 h-1.5" />
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                            {inventory.length === 0 && !gameWon && (
+                                <div className="text-center text-sm opacity-40 w-full py-4 flex flex-col items-center">
+                                    <Check size={24} className="mb-1" />
+                                    <span>Inventory empty</span>
+                                </div>
+                            )}
+                        </div>
+                        <div className="text-center mt-2 text-xs opacity-40">
+                            {selectedDomino ? "Tap board to place • Tap again to rotate" : "Drag or Tap to select"}
+                        </div>
+                    </div>
+                </div>
+
+                {/* Info Sections */}
+                <div className={`w-full max-w-2xl mt-8 rounded-2xl overflow-hidden shadow-sm border ${theme === 'dark' ? 'bg-slate-800/50 border-slate-700' : 'bg-white border-stone-200'}`}>
+                    {/* About Section */}
+                    <div className="p-8 border-b border-black/5">
+                        <div className="flex items-center gap-3 mb-4 text-indigo-500">
+                            <Info size={24} />
+                            <h3 className="text-xl font-bold">{t.sections.aboutTitle}</h3>
+                        </div>
+                        <p className="leading-relaxed opacity-80">{t.sections.aboutDesc}</p>
+                    </div>
+
+                    {/* NYT Games Section */}
+                    <div className="p-8 border-b border-black/5 bg-indigo-50/30 dark:bg-indigo-900/10">
+                        <div className="flex items-center gap-3 mb-4 text-indigo-500">
+                            <FileText size={24} />
+                            <h3 className="text-xl font-bold">{t.sections.nytTitle}</h3>
+                        </div>
+                        <p className="leading-relaxed opacity-80">{t.sections.nytDesc}</p>
+                    </div>
+
+                    {/* Features Section */}
+                    <div className="p-8 border-b border-black/5 bg-black/[0.02]">
+                        <div className="flex items-center gap-3 mb-6 text-indigo-500">
+                            <Star size={24} />
+                            <h3 className="text-xl font-bold">{t.sections.featuresTitle}</h3>
+                        </div>
+                        <div className="grid md:grid-cols-3 gap-6">
+                            {t.sections.features.map((f, i) => (
+                                <div key={i} className="space-y-2">
+                                    <h4 className="font-bold">{f.t}</h4>
+                                    <p className="text-sm opacity-70 leading-relaxed">{f.d}</p>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* FAQ Section */}
+                    <div className="p-8">
+                        <div className="flex items-center gap-3 mb-6 text-indigo-500">
+                            <HelpCircle size={24} />
+                            <h3 className="text-xl font-bold">{t.sections.faqTitle}</h3>
+                        </div>
+                        <div className="space-y-6">
+                            {t.sections.faq.map((item, i) => (
+                                <div key={i} className="space-y-2">
+                                    <h4 className="font-semibold flex items-start gap-2">
+                                        <span className="bg-indigo-100 text-indigo-700 text-xs px-2 py-0.5 rounded mt-0.5">Q</span> 
+                                        {item.q}
+                                    </h4>
+                                    <p className="text-sm opacity-70 pl-8">{item.a}</p>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+
+              </main>
+
+              {/* Footer */}
+              <footer className={`p-10 border-t border-black/10 text-sm opacity-80 mt-12 ${theme === 'dark' ? 'bg-black/20' : 'bg-stone-50'}`}>
+                <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8 text-center md:text-left">
+                    
+                    {/* Column 1: Links */}
+                    <div className="flex flex-col gap-3">
+                        <h4 className="font-bold opacity-50 uppercase tracking-wider text-xs mb-1">{t.title}</h4>
+                        <button onClick={() => setActiveModal('about')} className="hover:text-indigo-500 transition-colors text-left text-center md:text-left">{t.footer.about}</button>
+                        <button onClick={() => setActiveModal('sitemap')} className="hover:text-indigo-500 transition-colors text-left text-center md:text-left">{t.footer.sitemap}</button>
+                        <button onClick={() => setActiveModal('terms')} className="hover:text-indigo-500 transition-colors text-left text-center md:text-left">{t.footer.terms}</button>
+                        <button onClick={() => setActiveModal('privacy')} className="hover:text-indigo-500 transition-colors text-left text-center md:text-left">{t.footer.privacy}</button>
+                        <button onClick={() => setActiveModal('disclaimer')} className="hover:text-indigo-500 transition-colors text-left text-center md:text-left">{t.footer.disclaimer}</button>
+                    </div>
+
+                    {/* Column 2: Friendly Links */}
+                    <div className="flex flex-col gap-3">
+                        <h4 className="font-bold opacity-50 uppercase tracking-wider text-xs mb-1 flex items-center justify-center md:justify-start gap-1">
+                            <Users size={12}/> {t.footer.friendlyLinks}
+                        </h4>
+                        <a href="https://fungames.today/" target="_blank" rel="noopener noreferrer" className="hover:text-indigo-500 transition-colors flex items-center justify-center md:justify-start gap-1">
+                            <ExternalLink size={12} /> Fun Games Today
+                        </a>
+                        <a href="https://toolboxpro.top/" target="_blank" rel="noopener noreferrer" className="hover:text-indigo-500 transition-colors flex items-center justify-center md:justify-start gap-1">
+                            <ExternalLink size={12} /> Toolbox Pro
+                        </a>
+                        <a href="https://dreamwhisperai.com" target="_blank" rel="noopener noreferrer" className="hover:text-indigo-500 transition-colors flex items-center justify-center md:justify-start gap-1">
+                            <ExternalLink size={12} /> Dream Whisper AI
+                        </a>
+                    </div>
+
+                    {/* Column 3: Copyright & Rules */}
+                    <div className="flex flex-col gap-3">
+                        <h4 className="font-bold opacity-50 uppercase tracking-wider text-xs mb-1">{t.rules.title}</h4>
+                         <button onClick={() => setShowRules(true)} className="hover:text-indigo-500 transition-colors text-left md:text-left text-center">
+                            {t.rules.title}
+                        </button>
+                         <button className="hover:text-indigo-500 transition-colors text-left md:text-left text-center">
+                            {t.changelog}
+                        </button>
+                        <div className="mt-4 opacity-50 text-xs">
+                            © {currentYear} Pips Game<br/>
+                            {t.footerDisclaimer}
+                        </div>
+                    </div>
+                </div>
+                
+                {/* Related Tools Container */}
+                <div id="related-tools-container" className="mt-8"></div>
+              </footer>
+
+              {/* Rules Modal */}
+              {showRules && (
+                <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className={`max-w-md w-full p-6 rounded-2xl shadow-2xl max-h-[85vh] overflow-y-auto border ${theme === 'dark' ? 'bg-slate-800 border-slate-700' : 'bg-white border-white'}`}>
+                        <div className="flex justify-between items-center mb-6">
+                            <h2 className="text-2xl font-bold flex items-center gap-2">
+                                <Layout size={24} className="text-indigo-500" />
+                                {t.rules.title}
+                            </h2>
+                            <button onClick={() => setShowRules(false)} className="p-2 hover:bg-black/5 rounded-full"><X size={20}/></button>
+                        </div>
+                        <div className="space-y-4 text-sm leading-relaxed opacity-90">
+                            <p>{t.rules.desc1}</p>
+                            <p>{t.rules.desc2}</p>
+                            <div className="p-5 bg-indigo-50/50 dark:bg-slate-900/50 rounded-xl border border-indigo-100 dark:border-slate-700">
+                                <h3 className="font-bold mb-3 text-indigo-600 dark:text-indigo-400 uppercase text-xs tracking-wider">{t.rules.desc3}</h3>
+                                <ul className="grid grid-cols-1 gap-2.5">
+                                    <li className="flex items-center gap-2"><span className="font-mono font-bold bg-white dark:bg-slate-700 px-1.5 rounded shadow-sm w-8 text-center">2</span> {t.rules.sum}</li>
+                                    <li className="flex items-center gap-2"><span className="font-mono font-bold bg-white dark:bg-slate-700 px-1.5 rounded shadow-sm w-8 text-center">=</span> {t.rules.eq}</li>
+                                    <li className="flex items-center gap-2"><span className="font-mono font-bold bg-white dark:bg-slate-700 px-1.5 rounded shadow-sm w-8 text-center">≠</span> {t.rules.neq}</li>
+                                    <li className="flex items-center gap-2"><span className="font-mono font-bold bg-white dark:bg-slate-700 px-1.5 rounded shadow-sm w-8 text-center">&lt;8</span> {t.rules.lt}</li>
+                                    <li className="flex items-center gap-2"><span className="font-mono font-bold bg-white dark:bg-slate-700 px-1.5 rounded shadow-sm w-8 text-center">&gt;2</span> {t.rules.gt}</li>
+                                    <li className="flex items-center gap-2"><span className="font-mono font-bold bg-white dark:bg-slate-700 px-1.5 rounded shadow-sm w-8 text-center">E</span> {t.rules.even}</li>
+                                    <li className="flex items-center gap-2"><span className="font-mono font-bold bg-white dark:bg-slate-700 px-1.5 rounded shadow-sm w-8 text-center">OD</span> {t.rules.odd}</li>
+                                    <li className="flex items-center gap-2"><span className="font-mono font-bold bg-white dark:bg-slate-700 px-1.5 rounded shadow-sm w-8 text-center">∅6</span> {t.rules.no6}</li>
+                                    <li className="flex items-center gap-2"><span className="font-mono font-bold bg-white dark:bg-slate-700 px-1.5 rounded shadow-sm w-8 text-center">×12</span> {t.rules.prod}</li>
+                                    <li className="flex items-center gap-2"><span className="font-mono font-bold bg-white dark:bg-slate-700 px-1.5 rounded shadow-sm w-8 text-center">P</span> {t.rules.prime}</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+              )}
+
+              {/* Settings Modal */}
+              {showSettings && (
+                <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className={`max-w-xs w-full p-6 rounded-2xl shadow-2xl border ${theme === 'dark' ? 'bg-slate-800 border-slate-700' : 'bg-white border-white'}`}>
+                        <div className="flex justify-between items-center mb-6">
+                            <h2 className="text-xl font-bold flex items-center gap-2">
+                                <Settings size={20} className="text-indigo-500" />
+                                {t.settings}
+                            </h2>
+                            <button onClick={() => setShowSettings(false)} className="p-2 hover:bg-black/5 rounded-full"><X size={20}/></button>
+                        </div>
+
+                        <div className="space-y-6">
+                            {/* Game Mode */}
+                            <div>
+                                <label className="block text-xs font-bold mb-2 flex items-center gap-1.5 uppercase tracking-wider opacity-60">
+                                    <Zap size={14} /> {t.mode}
+                                </label>
+                                <div className="flex bg-black/5 p-1 rounded-xl">
+                                    <button 
+                                        onClick={() => { setGameMode('classic'); setStreak(0); generateGame(false); }}
+                                        className={`flex-1 py-2 text-sm rounded-lg transition-all font-bold ${gameMode === 'classic' ? 'bg-white shadow text-indigo-600' : 'opacity-60 hover:opacity-100'}`}
+                                    >
+                                        {t.classic}
+                                    </button>
+                                    <button 
+                                        onClick={() => { setGameMode('unlimited'); setStreak(0); generateGame(false); }}
+                                        className={`flex-1 py-2 text-sm rounded-lg transition-all font-bold ${gameMode === 'unlimited' ? 'bg-white shadow text-orange-500' : 'opacity-60 hover:opacity-100'}`}
+                                    >
+                                        {t.unlimited}
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Language */}
+                            <div>
+                                <label className="block text-xs font-bold mb-2 flex items-center gap-1.5 uppercase tracking-wider opacity-60">
+                                    <Globe size={14} /> {t.language}
+                                </label>
+                                <div className="relative">
+                                    <select 
+                                        value={lang} 
+                                        onChange={(e) => changeLanguage(e.target.value)}
+                                        className={`w-full p-2.5 rounded-lg border appearance-none font-medium ${theme === 'dark' ? 'bg-slate-700 border-slate-600' : 'bg-stone-50 border-stone-200'}`}
+                                    >
+                                        <option value="en">English</option>
+                                        <option value="zh-TW">繁體中文</option>
+                                        <option value="ru">Русский</option>
+                                        <option value="es">Español</option>
+                                        <option value="hi">हिन्दी</option>
+                                        <option value="pl">Polski</option>
+                                    </select>
+                                    <div className="absolute right-3 top-3 pointer-events-none opacity-50">▼</div>
+                                </div>
+                            </div>
+
+                            {/* Theme */}
+                            <div>
+                                <label className="block text-xs font-bold mb-2 flex items-center gap-1.5 uppercase tracking-wider opacity-60">
+                                    {theme === 'dark' ? <Moon size={14}/> : <Sun size={14}/>} {t.theme}
+                                </label>
+                                <div className="grid grid-cols-5 gap-3">
+                                    {Object.keys(themes).map(k => (
+                                        <button
+                                            key={k}
+                                            onClick={() => setTheme(k)}
+                                            className={`w-9 h-9 rounded-full border-[3px] transition-transform hover:scale-110 ${theme === k ? 'border-indigo-500 scale-110 shadow-md' : 'border-transparent opacity-80'}`}
+                                            style={{ background: boardColors[k][4] }}
+                                            title={t.colors[k]}
+                                        />
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+              )}
+
+              {/* General Modal */}
+              {activeModal && (
+                <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className={`max-w-lg w-full p-6 rounded-2xl shadow-2xl max-h-[85vh] overflow-y-auto border ${theme === 'dark' ? 'bg-slate-800 border-slate-700' : 'bg-white border-white'}`}>
+                        <div className="flex justify-end mb-2">
+                            <button onClick={() => setActiveModal(null)} className="p-2 hover:bg-black/5 rounded-full"><X size={20}/></button>
+                        </div>
+                        {renderModalContent()}
+                    </div>
+                </div>
+              )}
+            </div>
+          );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<PipsGame />);
+    </script>
+</body>
+</html>
